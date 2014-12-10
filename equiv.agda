@@ -13,7 +13,7 @@ invertible f = Σ (λ g → f ↯ g × g ↯ f)
 -- bi-invertibility; we use a quick name, since we won't ever use it again.
 --To keep left from right,
 --"f is a section and a retraction" sounds better than
---"f is a retraction and a section)
+--"f is a retraction and a section"
 
 biinv : (A → B) → U
 biinv f = (Σ (λ g → f ↯ g)) × (Σ (λ h → h ↯ f))
