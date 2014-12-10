@@ -5,11 +5,12 @@ module equiv {A B : Set} {C : A → Set} where
 
 open import hott
 
---"quasi" equivalence.
-qequiv : (A → B) → U
-qequiv f = Σ (λ g → f ↯ g × g ↯ f)
+--We use "invertible" for a function with a (homotopy) inverse, rather
+--than the (in my mind) misleading title of "quasiequivalence"
+invertible : (A → B) → U
+invertible f = Σ (λ g → f ↯ g × g ↯ f)
 
---bi-invertibility.
+--bi-invertibility; we use a quick name, since we won't ever use it again.
 --To keep left from right,
 --"f is a section and a retraction" sounds better than
 --"f is a retraction and a section)
@@ -21,13 +22,13 @@ biinv f = (Σ (λ g → f ↯ g)) × (Σ (λ h → h ↯ f))
 --equivalent:
 
 --easy direction
-qequiv-is-biinv : {f : A → B} → qequiv f → biinv f
-qequiv-is-biinv (g , (p , q)) = (g , p) , (g , q)
+invertible-is-biinv : {f : A → B} → invertible f → biinv f
+invertible-is-biinv (g , (p , q)) = (g , p) , (g , q)
 
 --harder direction: we take gfh as the inverse, and then we need to
 --play with paths for a bit.
-biinv-is-qequiv : {f : A → B} → biinv f → qequiv f
-biinv-is-qequiv {f} ((g , p) , (h , q)) = (g ∘ f ∘ h ,
+biinv-is-invertible : {f : A → B} → biinv f → invertible f
+biinv-is-invertible {f} ((g , p) , (h , q)) = (g ∘ f ∘ h ,
                                           (associateₗ , associateᵣ)) where
   associateₗ : f ↯ (g ∘ f ∘ h)
   associateₗ x = g (f (h (f x))) =⟨ ap g (q (f x)) ⟩ g (f x)
@@ -47,8 +48,8 @@ ishae f = Σ λ g →
                 hae f g η ε
 
 --half-adjoint obviously implies quasi-invertible
-hae-is-qequiv : (f : A → B) → ishae f → qequiv f
-hae-is-qequiv f (g , η , ε , τ) = (g , η , ε)
+hae-is-inv : (f : A → B) → ishae f → invertible f
+hae-is-inv f (g , η , ε , τ) = (g , η , ε)
 
 {-The other direction is more work. We need to rebuild ε, and then
  -built τ from that. This requires some path-magic.
@@ -58,16 +59,54 @@ hae-is-qequiv f (g , η , ε , τ) = (g , η , ε)
  -ε' : fg ∼ fgfg ∼ fg ∼ id. Naturality and some clever whiskering lets
  -us fill in the resulting opetope.
  -}
-qequiv-is-hae : (f : A → B) → qequiv f → ishae f
-qequiv-is-hae f (g , η , ε) = (g , η , ε' , τ) where
+ {-
+inv-is-hae : (f : A → B) → invertible f → ishae f
+inv-is-hae f (g , η , ε) = (g , η , ε' , τ) where
+            --just renaming to make life easier:
+            fgfη   : (x : A) → (f (g (f (g (f x))))) ≡ (f (g (f x)))
+            fgfη x = (ap f (ap (g ∘ f) (η x)))
+            fη     : (x : A) → (f (g (f x))) ≡ (f x)
+            fη   x = ap f (η x)
+            εf     : (x : A) → f (g (f x)) ≡ f x
+            εf   x = ε (f x)
+            εfg    : (x : B) → f (g (f (g x))) ≡ f (g x)
+            εfg  x = ε (f ( g x))
+            fηg    : (x : B) → f (g (f (g x))) ≡ f (g x)
+            fηg  x = ap f (η (g x))
             ε' : f ∘ g ∼ id
-            ε' x =  ε (f (g x)) ¹ · ap f (η (g x)) · (ε x)
-            commute : (x : A) → (ap f (η (g (f x)))) ≡ (ap f (ap (g ∘ f) (η x)))
-            commute x = ap (ap f) {!!}
+            ε' x =  (εfg x) ¹ · (fηg x) · (ε x)
+            commute : (x : A) → (fηg (f x)) ≡ fgfη x
+            commute x = ap (ap f) ((homotopy-switch (g ∘ f) η x) ¹)
             naturality : (x : A) →
-              (ap (f ∘ g ∘ f) (η x) · ε (f x)) ≡
-              (ε ((f ∘ g ∘ f) x) · (ap f (η x)))
-            naturality = {!!}
+              (εfg (f x) · (fη x)) ≡ (fgfη x · εf x)
+            naturality x = homotopy-natural εf (η x)
             τ : ap f ∘ η ∼ ε' ∘ f
-            τ x = {!!}
+            τ x = {!                     ap f (η x)  =⟨ ? ⟩
+                                 refl · ap f (η x)  =⟨ ? ⟩
+       (ε (f (g x)) ¹ · ε (f (g x)))  · ap f (η x)  =⟨ ? ⟩
+        ε (f (g x)) ¹ · (ε (f (g x))  · ap f (η x)  =⟨ ? ⟩
+        ε (f (g x)) ¹ · (ap f (ap (g ∘ f) (η x)))  · ε (f x) =⟨ ? ⟩
+
+!}
+
+-}
+
+--Grad lemma: invertible is (logically) equivalent to equivalence.
+inv-is-equiv : (f : A → B) → invertible f → isEquiv f
+inv-is-equiv f (g , η , ε) b = ( gb , paths) where
+             gb    = (g b , ε b)
+             g-_η : {x : A} (p : f x ≡ b) →
+               g b ≡ x
+             g- p η = ap g p ¹ · η _
+             lift : (x : A) (p : f x ≡ b) →
+                ε b ≡ p [ (λ v → f v ≡ b) ↓ (g- p η) ]
+             lift x p = {!(tp∘ (g- p η) ε b) · ?!}
+             paths : (x : fiber f b) → (gb ≡ x)
+             paths (x , p) = pair= (ap g p ¹ · η x) (lift x p)
+{-
+equiv-is-inv : (f : A → B) → isEquiv f → invertible f
+equiv-is-inv f e = (f ! , η , ε) where
+             η = ?
+             ε = ?
+             -}
 

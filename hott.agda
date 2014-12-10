@@ -150,15 +150,15 @@ coe : {A B : U} (p : A ≡ B) → A → B
 coe refl x = x
 
 coe! : {A B : U} (p : A ≡ B) → B → A
-coe! refl x = x
+coe! p x = coe (p ¹) x
 
---transport forward, also testin $
+--transport forward, also testing $
 transport : {A : U} (B : A → U) {x y : A} → x ≡ y → B x → B y
 transport B p = coe $ ap B p
 
 --transport backward
 transport! : {A : U} (B : A → U) {x y : A} → x ≡ y → B y → B x
-transport! B p = coe! $ ap B p
+transport! B p = transport B (p ¹)
 
 {-copying some stuff about paths over a path from the "real" HoTT-Agda library
  The point is that we can define the type of path over a path directly, and
@@ -169,6 +169,7 @@ transport! B p = coe! $ ap B p
 tpid : {A : U} {a : A} {x y : A} (p : x ≡ y) (q : x ≡ a) →
   transport (λ x → x ≡ a) p q ≡ (p ¹ · q)
 tpid refl refl = refl
+
 
 PathOver : {A : U} (B : A → U) {x y : A} (p : x ≡ y) (u : B x) (v : B y) → U
 PathOver B p u v = (transport B p u) ≡ v
@@ -181,8 +182,35 @@ apd : {A : U} {B : A → U} {x y : A} (f : (x : A) → B x) (p : x ≡ y) →
   f x ≡ f y [ B ↓ p ]
 apd f refl = refl
 
+---- some useful things about transport and paths
+--tp respects composition
+tp· : {A : U} {C : A → U} {x y z : A} (p : x ≡ y) (q : y ≡ z) (u : C x) →
+    transport C q (transport C p u) ≡ transport C (p · q) u
+tp· refl refl _ = refl
+
+tp∘ : {A B : U} { f : A → B} {E : B → U} {x y : A} (p : x ≡ y) (u : E (f x)) →
+    transport (E ∘ f) p u ≡ transport E (ap f p) u
+tp∘ refl _ = refl
+
+tpπ : {A : U} {P Q : A → U} {x y : A} {f : (x : A) → (P x → Q x)} (p : x ≡ y)
+  (u : P x) → transport Q p (f x u) ≡ f y (transport P p u)
+tpπ refl _ = refl
+
+--tp in identity paths is nicely behaved
+tp=ₗ : {A : U} {x y a : A} (q : a ≡ x) (p : x ≡ y) → 
+    transport (λ x → a ≡ x) p q ≡ (q · p)
+tp=ₗ q refl = refl-unitr! q
+
+tp=ᵣ : {A : U} {x y a : A} (q : x ≡ a) (p : x ≡ y) → 
+    transport (λ x → x ≡ a) p q ≡ (p ¹ · q)
+tp=ᵣ q refl = refl-unitl! q
+
+tp=ₛ : {A : U} {x y : A} (q : x ≡ x) (p : x ≡ y) →
+    transport (λ x → x ≡ x) p q ≡ (p ¹ · q · p)
+tp=ₛ q refl =  refl-unitr! q ·  refl-unitl! (q · refl)
+
 --the "introduction rule" for ≡ in Σ types
---We prove that ap _₀ and ap _₁ are eliminators with the
+--We prove that ap _ₗ and ap _ᵣ are eliminators with the
 -- (propositional) η and β laws later.
 pair= : {A : U} {B : A → U} {a a' : A} {b : B a} {b' : B a'}
   (p : a ≡ a') (q : b ≡ b' [ B ↓ p ]) → (a , b) ≡ (a' , b')
@@ -353,3 +381,16 @@ module section {X Y : U} where
   infix 3 _↯_
 open section public
 
+----The diagonal of a type, and the diagonal map. Useful in various places
+Δ : U → U
+Δ Y = Σ {Y} (λ x → Σ λ y → x ≡ y)
+
+δ : {X : U} → X → Δ X
+δ x = (x , x , refl)
+
+--two definitions for the the inverse of δ 
+π₁ : {X : U} → Δ X → X
+π₁ (x , _ , _) = x
+
+π₂ : {X : U} → Δ X → X
+π₂ (_ , y , _) = y
