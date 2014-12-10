@@ -30,7 +30,7 @@ module UA_implies_FE {E : {X Y : U} → (X → Y) → U}
 _≅ᴱ_ : U → U → U
 X ≅ᴱ Y = Σ {X → Y} (λ f → E f)
 
---fact 1a and 3
+-- fact 1a and 3
 transportIsE : {X : U} {Y : X → U} {x y : X} (p : x ≡ y) →
              E (transport Y p)
 transportIsE refl = i
@@ -45,7 +45,7 @@ tpMap : {X Y : U} (p : X ≡ Y) → X → Y
 tpMap p = id2E p ₗ
 
 
---ua says id2E has a section
+-- ua says id2E has a section
 postulate ua : {X Y : U} → X ≅ᴱ Y → X ≡ Y
 postulate univalence : {X Y : U} → (ua {X} {Y}) ↯ (id2E {X} {Y})
 
@@ -88,8 +88,8 @@ open retr2eq
       e p = ap ua (univalence ₗ (id2e p))
       -}
 
---starting with a path, transporting along that path is the same as
---precomposing with the corresponding transport map.
+-- starting with a path, transporting along that path is the same as
+-- precomposing with the corresponding transport map.
 transportIsComp : {X X' Y : U} (p : X ≡ X') (g : X' → Y) →
    transport! (λ Z → Z → Y) p g ≡ (g ∘ tpMap p) 
 transportIsComp refl g = refl
@@ -97,8 +97,8 @@ transportIsComp refl g = refl
 ηᴱ : {X Y : U} (e : X ≅ᴱ Y) → e ₗ ≡ id2E ⟪ e ⟫ ₗ
 ηᴱ {_} {_} e = ap (_ₗ) (univalence e) ¹
 
---starting with an equivalence, precomposing is the same as transporting
---along the corresponding path.
+-- starting with an equivalence, precomposing is the same as transporting
+-- along the corresponding path.
 preCompIsTransport : {X X' Y : U} (f : X ≅ᴱ X') (g : X' → Y) →
    transport! (λ Z → Z → Y) ⟪ f ⟫ g ≡ (g ∘ f ₗ) 
 preCompIsTransport fe g =  transportIsComp ⟪ fe ⟫ g · η where
@@ -107,14 +107,14 @@ preCompIsTransport fe g =  transportIsComp ⟪ fe ⟫ g · η where
   η : (g ∘ tpMap ⟪ fe ⟫) ≡ (g ∘ f)
   η = ap (λ f → g ∘ f) ((ηᴱ fe) ¹) 
 
---H is the proof that E is preserved by homotopies
+-- H is the proof that E is preserved by homotopies
 preCompIsE : {X X' Y : U} (f : X ≅ᴱ X') → E (λ (g : X' → Y) → g ∘ f ₗ)
 preCompIsE f = H (transportIsE! ⟪ f ⟫) (preCompIsTransport f)
 
---we need that any E is mono. It's easier to simply show that it's a
---section. The inverse is transportⁱᵈ(⟪f⟫⁻¹). As usual, we start with
---a more general lemma on paths. This is actually a special case of
---[tp·], (see hott.agda) but laying it out here makes things cleaner.
+-- we need that any E is mono. It's easier to simply show that it's a
+-- section. The inverse is transportⁱᵈ(⟪f⟫⁻¹). As usual, we start with
+-- a more general lemma on paths. This is actually a special case of
+-- [tp·], (see hott.agda) but laying it out here makes things cleaner.
 
 tpInv : {X : U} {C : X → U} {x y : X} (p : x ≡ y) (u : C x) →
   transport C (p ¹) (transport C p u) ≡ u
@@ -129,6 +129,3 @@ EisSect {X} {Y} f e = ( f¹ , s) where
  s : (x : X) → f¹ (f x) ≡ x
  s x = ap {!!} (univalence {!!} ¹) · tpInv {U} {id} ⟪ f , e ⟫ x
 
-{- Finally! We can lay out and prove funext -}
-happly : {X Y : U} {f g : X → Y} (p : f ≡ g) → f ∼ g
-happly refl = λ x → refl

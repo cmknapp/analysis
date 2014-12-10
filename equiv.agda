@@ -5,12 +5,12 @@ module equiv {A B : Set} {C : A → Set} where
 
 open import hott
 
---We use "invertible" for a function with a (homotopy) inverse, rather
---than the (in my mind) misleading title of "quasiequivalence"
+-- We use "invertible" for a function with a (homotopy) inverse, rather
+-- than the (in my mind) misleading title of "quasiequivalence"
 invertible : (A → B) → U
 invertible f = Σ (λ g → f ↯ g × g ↯ f)
 
---bi-invertibility; we use a quick name, since we won't ever use it again.
+-- bi-invertibility; we use a quick name, since we won't ever use it again.
 --To keep left from right,
 --"f is a section and a retraction" sounds better than
 --"f is a retraction and a section)
@@ -18,15 +18,15 @@ invertible f = Σ (λ g → f ↯ g × g ↯ f)
 biinv : (A → B) → U
 biinv f = (Σ (λ g → f ↯ g)) × (Σ (λ h → h ↯ f))
 
---binvertibility and quasiequivalence are clearly (logically)
---equivalent:
+-- binvertibility and quasiequivalence are clearly (logically)
+-- equivalent:
 
---easy direction
+-- easy direction
 invertible-is-biinv : {f : A → B} → invertible f → biinv f
 invertible-is-biinv (g , (p , q)) = (g , p) , (g , q)
 
---harder direction: we take gfh as the inverse, and then we need to
---play with paths for a bit.
+-- harder direction: we take gfh as the inverse, and then we need to
+-- play with paths for a bit.
 biinv-is-invertible : {f : A → B} → biinv f → invertible f
 biinv-is-invertible {f} ((g , p) , (h , q)) = (g ∘ f ∘ h ,
                                           (associateₗ , associateᵣ)) where
@@ -36,18 +36,18 @@ biinv-is-invertible {f} ((g , p) , (h , q)) = (g ∘ f ∘ h ,
   associateᵣ : g ∘ f ∘ h ↯ f
   associateᵣ x = ap f (p (h x)) · q x
 
---half-adjoint equivalence
+-- "half-adjoint" equivalence
 hae : (f : A → B) (g : B → A) → (g ∘ f ∼ id) → (f ∘ g ∼ id ) → U
 hae f g η ε = (ap f ∘ η) ∼ (ε ∘ f)
 
---A "predicate"
+-- A "predicate"
 ishae : (A → B) → U
 ishae f = Σ λ g →
             Σ λ η → 
               Σ λ ε →
                 hae f g η ε
 
---half-adjoint obviously implies quasi-invertible
+-- half-adjoint obviously implies invertible
 hae-is-inv : (f : A → B) → ishae f → invertible f
 hae-is-inv f (g , η , ε , τ) = (g , η , ε)
 
@@ -91,7 +91,7 @@ inv-is-hae f (g , η , ε) = (g , η , ε' , τ) where
 
 -}
 
---Grad lemma: invertible is (logically) equivalent to equivalence.
+-- Grad lemma: invertible is (logically) equivalent to equivalence.
 inv-is-equiv : (f : A → B) → invertible f → isEquiv f
 inv-is-equiv f (g , η , ε) b = ( gb , paths) where
              gb    = (g b , ε b)
