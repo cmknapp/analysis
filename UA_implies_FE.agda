@@ -28,7 +28,7 @@ module UA_implies_FE {E : {X Y : U} → (X → Y) → U}
   {H : {X Y : U} {f g : X → Y} → E f → f ∼ g → E g} where
   
 _≅ᴱ_ : U → U → U
-X ≅ᴱ Y = Σ {X → Y} (λ f → E f)
+X ≅ᴱ Y = Σ λ(f : X → Y) → E f
 
 -- fact 1a and 3
 transportIsE : {X : U} {Y : X → U} {x y : X} (p : x ≡ y) →
@@ -38,16 +38,20 @@ transportIsE! : {X : U} {Y : X → U} {x y : X} (p : x ≡ y) →
              E (transport! Y p)
 transportIsE! p = transportIsE (p ¹)
 
-id2E : {X Y : U} (p : X ≡ Y) → X ≅ᴱ Y
-id2E {X} {Y} p = (transport id p , transportIsE p)
---extracting the actual map. This is really just transport again.
 tpMap : {X Y : U} (p : X ≡ Y) → X → Y
-tpMap p = id2E p ₗ
+tpMap p = transport id p
+
+id2E : {X Y : U} (p : X ≡ Y) → X ≅ᴱ Y
+id2E {X} {Y} p = (tpMap p , transportIsE p)
+--extracting the actual map. This is really just transport again.
 
 
 -- ua says id2E has a section
 postulate ua : {X Y : U} → X ≅ᴱ Y → X ≡ Y
 postulate univalence : {X Y : U} → (ua {X} {Y}) ↯ (id2E {X} {Y})
+
+univalence' : {X Y : U} → (f : X → Y)(e : E f) → id2E(ua(f , e)) ≡ (f , e)
+univalence' {X} {Y} f e = univalence (f , e)
 
 syntax ua f = ⟪ f ⟫
 
@@ -64,7 +68,7 @@ This should really be in a different file.
 -}
 
 module retr2eq {A : U} (f : {x y : A} → x ≡ y → x ≡ y) where
-    fIsConcat : {x y : A} (p : x ≡ y) → f p ≡ (f refl · p)
+    fIsConcat : {x y : A} (p : x ≡ y) → f p ≡ ((f refl) · p)
     fIsConcat refl = refl-unitr! (f refl)
 
     idempotentIsId : (e : {x y : A} (p : x ≡ y) → f p ≡ f (f p)) →
@@ -81,12 +85,6 @@ module retr2eq {A : U} (f : {x y : A} → x ≡ y → x ≡ y) where
           ffr = f (f refl)
 open retr2eq
 
-{- TODO : This. (Martin's retraction→equiv proof)
-    ua↯ : {X Y : U} → id2E {X} {Y} ↯ ua
-    ua↯ {X} {Y} = idempotentIsId {U} (ua ∘ id2E) e where
-      e : {X Y : U} (p : X ≡ Y)
-      e p = ap ua (univalence ₗ (id2e p))
-      -}
 
 -- starting with a path, transporting along that path is the same as
 -- precomposing with the corresponding transport map.
@@ -111,6 +109,13 @@ preCompIsTransport fe g =  transportIsComp ⟪ fe ⟫ g · η where
 preCompIsE : {X X' Y : U} (f : X ≅ᴱ X') → E (λ (g : X' → Y) → g ∘ f ₗ)
 preCompIsE f = H (transportIsE! ⟪ f ⟫) (preCompIsTransport f)
 
+preCompδ : {X Y : U} → (Δ X → Y) → X → Y
+preCompδ g = g ∘ δ
+
+preCompδIsE : {X Y : U} → E (preCompδ {X} {Y})
+preCompδIsE = preCompIsE (δ , d)
+
+
 -- we need that any E is mono. It's easier to simply show that it's a
 -- section. The inverse is transportⁱᵈ(⟪f⟫⁻¹). As usual, we start with
 -- a more general lemma on paths. This is actually a special case of
@@ -122,10 +127,33 @@ tpInv {_} {C} {x} {y} p u = tp· p (p ¹) u · ap tp (path-syml p) where
   tp : x ≡ x → C x
   tp = λ p → transport C p u
 
+
+blah : {X Y : U} (P : (X → Y) → U) → ((p : X ≡ Y) → P(tpMap p)) 
+     → (f : X → Y) → E f → P f
+blah {X} {Y} P φ f e = transport P c2 c1
+ where
+  p : X ≡ Y
+  p = ua(f , e)
+  c1 : P(tpMap p)
+  c1 = φ p
+  c2 : tpMap p ≡ f
+  c2 = ap _ₗ (univalence (f , e))
+
+EisSect' : {X Y : U} (p : X ≡ Y) → Σ (λ g → (tpMap p) ↯ g)
+EisSect' refl = id , λ x → refl
+  
+
 EisSect : {X Y : U} (f : X → Y) → E f → Σ (λ g → f ↯ g)
-EisSect {X} {Y} f e = ( f¹ , s) where
- f¹ : Y → X
- f¹ = transport id (⟪ f , e ⟫ ¹)
- s : (x : X) → f¹ (f x) ≡ x
- s x = ap {!!} (univalence {!!} ¹) · tpInv {U} {id} ⟪ f , e ⟫ x
+EisSect {X} {Y} = blah (λ z → Σ (_↯_ z)) EisSect'
+
+blahblah : {X A : U} (f : X → A) → E f → (x y : X) → f x ≡ f y → x ≡ y
+blahblah {A}  = {!!}
+
+lemma₁ : {X : U} → (π₁ ∘ (δ {X})) ≡ (π₂ ∘ δ)
+lemma₁ {X} = refl
+
+lemma₂ : {X : U} → π₁ {X} ≡ π₂
+lemma₂ {X} = blahblah preCompδ preCompδIsE π₁ π₂ lemma₁
+
+
 
