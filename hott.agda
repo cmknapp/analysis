@@ -35,36 +35,34 @@ data ℕ : U where
 
 infixr 1 _,_
 
-data Σ {A : U} (B : A → U) : U where
-  _,_ : (x : A)  → B x → Σ B
+record Σ {A : U} (B : A → U) : U where
+  constructor _,_ 
+  field fst : A
+        snd : B fst
+open Σ public
   
 -- product
 infixr 2 _×_
 _×_ : (A B : U) → U
 A × B = Σ {A} (λ x → B)
   
-_ₗ : {A : U} → {B : A → U} → Σ {A} B → A
-(x , y) ₗ = x
-
-_ᵣ : {A : U} {B : A → U} (y : Σ {A} B) → B (y ₗ)
-(x , y) ᵣ = y
-
 -- Prettier Pi types. Honestly, this doesn't come in handy often
 Π : (A : U) (B : A → U) → U
 Π A B = (x : A) → B x
 
 
 -- identity types and some properites
+infix 5 _≡_
 data _≡_ {X : U} : X → X → U where
   refl : {x : X} → x ≡ x
   
-_¹ : {X : U} {x y : X} → x ≡ y → y ≡ x
-refl ¹ = refl
+_⁻¹ : {X : U} {x y : X} → x ≡ y → y ≡ x
+refl ⁻¹ = refl
 
 _·_ : {X : U} {x y z : X} → x ≡ y → y ≡ z → x ≡ z
 refl · refl = refl
 
-infixr 2 _·_
+infixr 8 _·_
 infix  2 _∎
 infixr 2 _=⟨_⟩_
 
@@ -75,48 +73,48 @@ _∎ : {A : U} (x : A) → x ≡ x
 _ ∎ = refl
 
 {- groupoid laws for identity types -}
-refl-unitl : {X : U} {x y : X} (p : x ≡ y) → (refl · p) ≡ p
+refl-unitl : {X : U} {x y : X} (p : x ≡ y) → refl · p ≡ p
 refl-unitl refl = refl
 -- backwards
-refl-unitl! : {X : U} {x y : X} (p : x ≡ y) → p ≡ (refl · p)
-refl-unitl! p = (refl-unitl p) ¹
+refl-unitl! : {X : U} {x y : X} (p : x ≡ y) → p ≡ refl · p
+refl-unitl! p = (refl-unitl p) ⁻¹
 
-refl-unitr : {X : U} {x y : X} (p : x ≡ y) → (p · refl) ≡ p
+refl-unitr : {X : U} {x y : X} (p : x ≡ y) → p · refl ≡ p
 refl-unitr refl = refl
 -- backwards
-refl-unitr! : {X : U} {x y : X} (p : x ≡ y) → p ≡ (p · refl)
-refl-unitr! p = (refl-unitr p) ¹
+refl-unitr! : {X : U} {x y : X} (p : x ≡ y) → p ≡ p · refl
+refl-unitr! p = (refl-unitr p) ⁻¹
 
 path-assoc : {X : U } {x y z w : X} (p : x ≡ y) (q : y ≡ z) (r : z ≡ w) →
-  ((p · q) · r) ≡ (p · (q · r))
+  (p · q) · r ≡ p · q · r
 path-assoc refl refl refl = refl
 -- backwards
 path-assoc! : {X : U } {x y z w : X} (p : x ≡ y) (q : y ≡ z) (r : z ≡ w) →
-  (p · (q · r)) ≡ ((p · q) · r)
-path-assoc! p q r = (path-assoc p q r) ¹
+  p · q · r ≡ (p · q) · r
+path-assoc! p q r = (path-assoc p q r) ⁻¹
 
 
-path-syml : {X : U} {x y : X} (p : x ≡ y) → (p · p ¹) ≡ refl
+path-syml : {X : U} {x y : X} (p : x ≡ y) → p · p ⁻¹ ≡ refl
 path-syml refl = refl
 -- backwards
-path-syml! : {X : U} {x y : X} (p : x ≡ y) → refl ≡ (p · p ¹)
-path-syml! p = (path-syml p) ¹
+path-syml! : {X : U} {x y : X} (p : x ≡ y) → refl ≡ (p · p ⁻¹)
+path-syml! p = (path-syml p) ⁻¹
 
-path-symr : {X : U} {x y : X} (p : x ≡ y) → (p ¹ · p) ≡ refl
+path-symr : {X : U} {x y : X} (p : x ≡ y) → (p ⁻¹ · p) ≡ refl
 path-symr refl = refl
 -- backwards
-path-symr! : {X : U} {x y : X} (p : x ≡ y) → refl ≡ (p ¹ · p)
-path-symr! p = (path-symr p) ¹
+path-symr! : {X : U} {x y : X} (p : x ≡ y) → refl ≡ (p ⁻¹ · p)
+path-symr! p = (path-symr p) ⁻¹
 
 -- right whiskering.
-_∗ᵣ_ : {X : U} {x y z : X} {p q : x ≡ y} → (p ≡ q) → (r : y ≡ z) →
+_·ᵣ_ : {X : U} {x y z : X} {p q : x ≡ y} → (p ≡ q) → (r : y ≡ z) →
      (p · r) ≡ (q · r)
-α ∗ᵣ refl = (refl-unitr _) · α · (refl-unitr _) ¹
+α ·ᵣ refl = (refl-unitr _) · (α · (refl-unitr _) ⁻¹)
 
 --and left whiskering
-_∗ₗ_ : {X : U} {x y z : X} {p q : y ≡ z} → (r : x ≡ y) → (p ≡ q) →
+_·ₗ_ : {X : U} {x y z : X} {p q : y ≡ z} → (r : x ≡ y) → (p ≡ q) →
      (r · p) ≡ (r · q)
-refl ∗ₗ α = (refl-unitl _) · α · (refl-unitl _) ¹
+refl ·ₗ α = (refl-unitl _) · (α · (refl-unitl _) ⁻¹)
 
 -- ap on paths, composition, etc
 ap : {X : U} {Y : U} {x y : X} (f : X → Y) → x ≡ y → f x ≡ f y
@@ -152,7 +150,7 @@ coe : {A B : U} (p : A ≡ B) → A → B
 coe refl x = x
 
 coe! : {A B : U} (p : A ≡ B) → B → A
-coe! p x = coe (p ¹) x
+coe! p x = coe (p ⁻¹) x
 
 -- transport forward,
 transport : {A : U} (B : A → U) {x y : A} → x ≡ y → B x → B y
@@ -160,7 +158,7 @@ transport B p = coe $ ap B p
 
 --transport backward
 transport! : {A : U} (B : A → U) {x y : A} → x ≡ y → B y → B x
-transport! B p = transport B (p ¹)
+transport! B p = transport B (p ⁻¹)
 
 {-copying some stuff about paths over a path from the "real" HoTT-Agda library
  The point is that we can define the type of path over a path directly, and
@@ -169,7 +167,7 @@ transport! B p = transport B (p ¹)
 
 -- transport in idenity types. This needs a new name
 tpid : {A : U} {a : A} {x y : A} (p : x ≡ y) (q : x ≡ a) →
-  transport (λ x → x ≡ a) p q ≡ (p ¹ · q)
+  transport (λ x → x ≡ a) p q ≡ (p ⁻¹ · q)
 tpid refl refl = refl
 
 
@@ -204,11 +202,11 @@ tp=ₗ : {A : U} {x y a : A} (q : a ≡ x) (p : x ≡ y) →
 tp=ₗ q refl = refl-unitr! q
 
 tp=ᵣ : {A : U} {x y a : A} (q : x ≡ a) (p : x ≡ y) → 
-    transport (λ x → x ≡ a) p q ≡ (p ¹ · q)
+    transport (λ x → x ≡ a) p q ≡ (p ⁻¹ · q)
 tp=ᵣ q refl = refl-unitl! q
 
 tp=ₛ : {A : U} {x y : A} (q : x ≡ x) (p : x ≡ y) →
-    transport (λ x → x ≡ x) p q ≡ (p ¹ · q · p)
+    transport (λ x → x ≡ x) p q ≡ p ⁻¹ · (q · p)
 tp=ₛ q refl =  refl-unitr! q ·  refl-unitl! (q · refl)
 
 -- the "introduction rule" for ≡ in Σ types
@@ -230,10 +228,10 @@ isContr A = Σ {A} (λ x → (y : A) → x ≡ y)
 -- We keep the contractibility proof explicit.
 -- I don't know if this is the right thing to do.
 center : {A : Set} → (isContr A) → A
-center  = _ₗ
+center  = fst
 
 contraction : {A : Set} → (c : isContr A) → ((y : A) → center c ≡ y)
-contraction = _ᵣ
+contraction = snd
 
 isProp : U → U
 isProp A = (x y : A) → x ≡ y
@@ -257,7 +255,7 @@ A ≃ B = Σ {A → B} (λ f → isEquiv f)
 
 -- extracting an inverse. We prove it *is* an inverse later
 _! : {A B : U} (f : A → B) → {e : isEquiv f} → B → A
-(f !) {e} b = center (e b) ₗ
+(f !) {e} b = fst $ center (e b)
 
 {- Properties of contractibility, props and sets -}
 
@@ -265,7 +263,7 @@ _! : {A B : U} (f : A → B) → {e : isEquiv f} → B → A
 1-is-contr = (★ , 𝟙-rec refl)
 
 contr-is-prop : {A : U} → isContr A → isProp A
-contr-is-prop (c , paths) x y = x =⟨ paths x ¹ ⟩
+contr-is-prop (c , paths) x y = x =⟨ paths x ⁻¹ ⟩
                                 c =⟨ paths y ⟩
                                 y ∎
 
@@ -276,7 +274,7 @@ inhProp-isContr p w = (p , w p)
 
 -- contractible types are propositions
 contr-isProp : {P : U} → isContr P → isProp P
-contr-isProp (c , p) x y = p x ¹ · p y
+contr-isProp (c , p) x y = p x ⁻¹ · p y
 
 -- propositions have contractible identity types.
 -- This is surprisingly non-trivial: we need a clever
@@ -288,11 +286,11 @@ propId-isContr : (P : U) → isProp P → (x y : P) → isContr (x ≡ y)
 propId-isContr P p x y = (p x y , lemma₂) where
                g : (y : P) → x ≡ y
                g = p x
-               lemma₁ : {a b : P} (q : a ≡ b) → q ≡ (g a ¹ · g b)
-               lemma₁ {a} {.a} refl = path-symr (g a) ¹
+               lemma₁ : {a b : P} (q : a ≡ b) → q ≡ (g a ⁻¹ · g b)
+               lemma₁ {a} {.a} refl = path-symr (g a) ⁻¹
                lemma₂ : (q : x ≡ y) → p x y ≡ q
-               lemma₂ q = (p x y) =⟨ lemma₁ (p x y) ⟩ (g x ¹ · g y)
-                                  =⟨ (lemma₁ q) ¹ ⟩ q ∎
+               lemma₂ q = (p x y) =⟨ lemma₁ (p x y) ⟩ (g x ⁻¹ · g y)
+                                  =⟨ (lemma₁ q) ⁻¹ ⟩ q ∎
                                   
 -- As an immediate corollary, all props are sets:
 prop-isSet : (P : U) → isProp P → isSet P
@@ -308,7 +306,7 @@ biimplication-isEquiv {P} {Q} p q f g b = ((gb , q fgb b) , lemma) where
                       gb  = g b
                       fgb = f (g b)
                       prop : (x : fiber f b) →
-                        (q fgb b ≡ x ᵣ [ (λ x → f x ≡ b) ↓ p gb (x ₗ) ])
+                        (q fgb b ≡ (snd x) [ (λ x → f x ≡ b) ↓ p gb (fst x) ])
                         --prop-isSet Q q gives us that identity types for all
                         --elements (in this case, fx and b) are mere props.
                         --So we take two paths to get an equality.
@@ -349,7 +347,7 @@ open homotopies public
 
 homotopy-natural : {A B : U} {f g : A → B} (H : f ∼ g) {x y : A} (p : x ≡ y)
   → (H x · ap g p) ≡ (ap f p · H y)
-homotopy-natural H refl = refl-unitr (H _) · (refl-unitl (H _) ¹)
+homotopy-natural H refl = refl-unitr (H _) · (refl-unitl (H _) ⁻¹)
 
 -- When H : f ∼ id, then Hf = fH
 -- We whisker the naturality square Hfx · Hx ≡ fHx · Hx with Hx⁻¹ to get
@@ -357,33 +355,34 @@ homotopy-natural H refl = refl-unitr (H _) · (refl-unitl (H _) ¹)
 
 homotopy-switch : {A : U} (f : A → A) (H : f ∼ id) → ap f ∘ H ∼ H ∘ f
 homotopy-switch f H x = fHx =⟨ refl-unitr! fHx ⟩        (fHx · refl)
-                            =⟨ fHx ∗ₗ path-syml! Hx ⟩   (fHx · (Hx · Hx!))
+                            =⟨ fHx ·ₗ path-syml! Hx ⟩   (fHx · (Hx · Hx!))
                             =⟨ path-assoc! fHx Hx Hx! ⟩ ((fHx · Hx) · Hx!)
-                            =⟨ (naturality ¹) ∗ᵣ Hx! ⟩  ((Hfx · Hx) · Hx!)
+                            =⟨ (naturality ⁻¹) ·ᵣ Hx! ⟩  ((Hfx · Hx) · Hx!)
                             =⟨ path-assoc Hfx Hx Hx! ⟩  (Hfx · (Hx · Hx!))
-                            =⟨ Hfx ∗ₗ path-syml Hx ⟩    (Hfx · refl)
+                            =⟨ Hfx ·ₗ path-syml Hx ⟩    (Hfx · refl)
                             =⟨ refl-unitr Hfx ⟩ Hfx ∎ where
                 fHx = ap f (H x)
                 Hfx = H (f x)
                 Hx = H x
-                Hx! = (H x) ¹
+                Hx! = (H x) ⁻¹
                 --We need to fill in some extra cells, since agda
                 --doesn't believe that ap id p = p.
                 natsquare : (Hfx · ap id Hx) ≡ (fHx · Hx)
                 natsquare = homotopy-natural H (H x)
                 naturality : (Hfx · Hx) ≡ (fHx · Hx)
-                naturality = Hfx ∗ₗ apid ¹ · natsquare
+                naturality = Hfx ·ₗ apid ⁻¹ · natsquare
 
 -- Section and retraction. We use f ↯ g to mean "f is a section of g";
 -- As a mnemonic, read f ↯ g as "f splits g", and as we all know,
 -- every epi splits. (Ha!)
 module section {X Y : U} where
-  _↯_ : (X → Y) → (Y → X) → U
-  f ↯ g = (g ∘ f) ∼ id
-  infix 3 _↯_
+  _isSectionOf_ : (X → Y) → (Y → X) → U
+  f isSectionOf g = (g ∘ f) ∼ id
+  infix 3 _isSectionOf_
 open section public
 
--- The diagonal of a type, and the diagonal map. Perhaps this should be elsewhere
+-- The diagonal of a type, and the diagonal map.
+-- Perhaps this should be elsewhere?
 Δ : U → U
 Δ Y = Σ {Y} (λ x → Σ λ y → x ≡ y)
 

@@ -8,7 +8,7 @@ open import hott
 -- We use "invertible" for a function with a (homotopy) inverse, rather
 -- than the (in my mind) misleading title of "quasiequivalence"
 invertible : (A → B) → U
-invertible f = Σ (λ g → f ↯ g × g ↯ f)
+invertible f = Σ (λ g → f isSectionOf g × g isSectionOf f)
 
 -- bi-invertibility; we use a quick name, since we won't ever use it again.
 --To keep left from right,
@@ -16,7 +16,7 @@ invertible f = Σ (λ g → f ↯ g × g ↯ f)
 --"f is a retraction and a section"
 
 biinv : (A → B) → U
-biinv f = (Σ (λ g → f ↯ g)) × (Σ (λ h → h ↯ f))
+biinv f = (Σ (λ g → f isSectionOf g)) × (Σ (λ h → h isSectionOf f))
 
 -- binvertibility and quasiequivalence are clearly (logically)
 -- equivalent:
@@ -30,10 +30,10 @@ invertible-is-biinv (g , (p , q)) = (g , p) , (g , q)
 biinv-is-invertible : {f : A → B} → biinv f → invertible f
 biinv-is-invertible {f} ((g , p) , (h , q)) = (g ∘ f ∘ h ,
                                           (associateₗ , associateᵣ)) where
-  associateₗ : f ↯ (g ∘ f ∘ h)
+  associateₗ : f isSectionOf (g ∘ f ∘ h)
   associateₗ x = g (f (h (f x))) =⟨ ap g (q (f x)) ⟩ g (f x)
                                  =⟨ p x ⟩ x ∎
-  associateᵣ : g ∘ f ∘ h ↯ f
+  associateᵣ : g ∘ f ∘ h isSectionOf f
   associateᵣ x = ap f (p (h x)) · q x
 
 -- "half-adjoint" equivalence
@@ -97,12 +97,12 @@ inv-is-equiv f (g , η , ε) b = ( gb , paths) where
              gb    = (g b , ε b)
              g-_η : {x : A} (p : f x ≡ b) →
                g b ≡ x
-             g- p η = ap g p ¹ · η _
+             g- p η = ap g p ⁻¹ · η _
              lift : (x : A) (p : f x ≡ b) →
                 ε b ≡ p [ (λ v → f v ≡ b) ↓ (g- p η) ]
              lift x p = {!(tp∘ (g- p η) ε b) · ?!}
              paths : (x : fiber f b) → (gb ≡ x)
-             paths (x , p) = pair= (ap g p ¹ · η x) (lift x p)
+             paths (x , p) = pair= (ap g p ⁻¹ · η x) (lift x p)
 {-
 equiv-is-inv : (f : A → B) → isEquiv f → invertible f
 equiv-is-inv f e = (f ! , η , ε) where
