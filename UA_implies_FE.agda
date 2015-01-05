@@ -1,5 +1,4 @@
 {-# OPTIONS --without-K #-}
-{-# OPTIONS --type-in-type #-}
 
 --U = Set
 
@@ -23,117 +22,119 @@ to prove funext.
 So, we create a module with an input paramter being any type family satisfying
 conditions 1 and 2, state UA accordingly, and prove funext from this
  -}
-module UA_implies_FE {E : {X Y : U} → (X → Y) → U}
-  {i : {X : U} → (E {X} {X} id)} {d : {X : U} → E {X} {Δ X} δ}
-  {H : {X Y : U} {f g : X → Y} → E f → f ∼ g → E g} where
+module UA_implies_FE {E : ∀ {i j} {X : U i} {Y : U j} → (X → Y) → U (lmax i j)}
+  {I : ∀ {i} {X : U i} → (E {_} {_} {X} {X} id)} {d : ∀ {i} {X : U i} → E {_} {_} {X} {Δ X} δ}
+  {H : ∀ {i j} {X : U i} {Y : U j} {f g : X → Y} → E f → f ∼ g → E g} where
   
-_≅ᴱ_ : U → U → U
+_≅ᴱ_ : ∀ {i j} → U i → U j → U (lmax i j)
 X ≅ᴱ Y = Σ λ(f : X → Y) → E f
 
 -- fact 1a and 3
-transportIsE : {X : U} {Y : X → U} {x y : X} (p : x ≡ y) →
+transportIsE : ∀ {i j} {X : U i} {Y : X → U j} {x y : X} (p : x ≡ y) →
              E (transport Y p)
-transportIsE refl = i
-transportIsE! : {X : U} {Y : X → U} {x y : X} (p : x ≡ y) →
+transportIsE refl = I
+transportIsE! : ∀ {i j} {X : U i} {Y : X → U j} {x y : X} (p : x ≡ y) →
              E (transport! Y p)
 transportIsE! p = transportIsE (p ⁻¹)
 
 -- Since we use transport id a lot here, we give it a special name.
 -- Perhaps this should be standard?
-tpMap : {X Y : U} (p : X ≡ Y) → X → Y
+tpMap : ∀ {i} {X : U i} {Y : U i} (p : X ≡ Y) → X → Y
 tpMap p = transport id p
 
-R : {X Y : U} (p : X ≡ Y) → X ≅ᴱ Y
+R : ∀ {i} {X : U i} {Y : U i}  (p : X ≡ Y) → X ≅ᴱ Y
 R {X} {Y} p = (tpMap p , transportIsE p)
 
 -- ua says R has a section.
-module identitySection {S : {X Y : U} → X ≅ᴱ Y → X ≡ Y}
-                       {u : {X Y : U} → (S {X} {Y}) isSectionOf (R {X} {Y})}
+module identitySection {i} {S : {X Y : U i} → X ≅ᴱ Y → X ≡ Y}
+                       {UU : {X Y : U i} → (S {X} {Y}) isSectionOf (R {i} {X} {Y})}
                        where
 
-    univalence' : {X Y : U} → (f : X → Y)(e : E f) → R(S(f , e)) ≡ (f , e)
-    univalence' {X} {Y} f e = u (f , e)
+    -- the assumptions give us an η law for E
+    ηᴱ : {X Y : U i} (e : X ≅ᴱ Y) → fst (R (S e)) ≡ fst  e 
+    ηᴱ {_} {_} e = ap fst (UU e) 
 
-    -- starting with a path, transporting along that path is the same as
-    -- precomposing with the corresponding transport map.
-    transportIsComp : {X X' Y : U} (p : X ≡ X') (g : X' → Y) →
-       transport! (λ Z → Z → Y) p g ≡ (g ∘ tpMap p) 
-    transportIsComp refl g = refl
-
-    ηᴱ : {X Y : U} (e : X ≅ᴱ Y) → fst e ≡ fst (R (S e ))
-    ηᴱ {_} {_} e = ap fst (u e) ⁻¹
-
-    -- starting with an equivalence, precomposing is the same as transporting
-    -- along the corresponding path.
-    preCompIsTransport : {X X' Y : U} (f : X ≅ᴱ X') (g : X' → Y) →
-       transport! (λ Z → Z → Y) (S f) g ≡ (g ∘ (fst f)) 
-    preCompIsTransport fe g =  transportIsComp (S fe) g · η where
-      f = fst fe
-      e = snd fe
-      η : g ∘ tpMap (S fe) ≡ (g ∘ f)
-      η = ap (λ f → g ∘ f) ((ηᴱ fe) ⁻¹) 
-
-    -- H is the proof that E is preserved by homotopies
-    preCompIsE : {X X' Y : U} (f : X ≅ᴱ X') → E (λ (g : X' → Y) → g ∘ (fst f))
-    preCompIsE f = H (transportIsE! (S f)) (preCompIsTransport f)
-
-    preCompδ : {X Y : U} → (Δ X → Y) → X → Y
-    preCompδ g = g ∘ δ
-
-    preCompδIsE : {X Y : U} → E (preCompδ {X} {Y})
-    preCompδIsE = preCompIsE (δ , d)
-
-
-    -- we need that any E is mono. It's easier to simply show that it's a
-    -- section. The inverse is transportⁱᵈ(⟪f⟫⁻¹). As usual, we start with
-    -- a more general lemma on paths. This is actually a special case of
-    -- [tp·], (see hott.agda) but laying it out here makes things cleaner.
-
-    tpInv : {X : U} {C : X → U} {x y : X} (p : x ≡ y) (u : C x) →
-      transport C (p ⁻¹) (transport C p u) ≡ u
-    tpInv {_} {C} {x} {y} p u = tp· p (p ⁻¹) u · ap tp (path-syml p) where
-      tp : x ≡ x → C x
-      tp = λ p → transport C p u
-
-
-    blah : {X Y : U} (P : (X → Y) → U) → ((p : X ≡ Y) → P(tpMap p)) 
+    -- A key point is that univalence says that in
+    -- order to prove anything about all equivalences, it suffices to prove
+    -- it about all transport maps. Going a step farther, we can actually
+    -- prove facts about all equivalences by simply proving it for all
+    -- identity functions.
+    
+    -- This needs a new name
+    lift : ∀ {j} {X Y : U i} (P : (X → Y) → U j) → ((p : X ≡ Y) → P(tpMap p)) 
          → (f : X → Y) → E f → P f
-    blah {X} {Y} P φ f e = transport P c2 c1
+    lift {j} {X} {Y} P φ f e = transport P η Φ
      where
       p : X ≡ Y
       p = S(f , e)
-      c1 : P(tpMap p)
-      c1 = φ p
-      c2 : tpMap p ≡ f
-      c2 = ap fst (u (f , e))
+      Φ : P(tpMap p)
+      Φ = φ p
+      η : tpMap p ≡ f
+      η = ηᴱ (f , e)
 
-    EisSect' : {X Y : U} (p : X ≡ Y) → Σ (λ g → (tpMap p) isSectionOf g)
+    liftFromId : ∀ {j} {X Y : U i} (P : {X Y : U i} → (X → Y) → U j) →
+      ({Z : U i} → (P (id {_} {Z}))) → (f : X → Y) → E f → P f
+    liftFromId P W f e = lift P witness f e where
+      witness : {X Y : U i} (p : X ≡ Y) → P(tpMap p)
+      witness refl = W 
+
+    -- we need that any E is mono. It's easier to simply show that it's a
+    -- section, using the "lifting" operations above.
+
+    EisSect' : {X Y : U i} (p : X ≡ Y) → Σ (λ g → (tpMap p) isSectionOf g)
     EisSect' refl = id , λ x → refl
 
 
-    EisSect : {X Y : U} (f : X → Y) → E f → Σ (λ g → f isSectionOf g)
-    EisSect {X} {Y} = blah (λ z → Σ (_isSectionOf_ z)) EisSect'
+    EisSect : {X Y : U i} (f : X → Y) → E f → Σ (λ g → f isSectionOf g)
+    EisSect = liftFromId (λ z → Σ (_isSectionOf_ z)) idsect where
+        idsect : {Z : U i} → Σ (λ g → id isSectionOf g)
+        idsect {Z} = id {i} {Z} , λ x → refl
 
-    blahblah : {X A : U} (f : X → A) → E f → (x y : X) → f x ≡ f y → x ≡ y
+    blahblah : {X A : U i} (f : X → A) → E f → (x y : X) → f x ≡ f y → x ≡ y
     blahblah {X} {A} f e x y p  = cancelx · (ap g p) · cancely where
-      g' : Σ (_isSectionOf_ f)
-      g' = EisSect f e
+      g,p : Σ (_isSectionOf_ f)
+      g,p = EisSect f e
       g : A → X
-      g = fst g'
+      g = fst g,p
       P : (x : X) → g (f x) ≡ x
-      P = snd g'
+      P = snd g,p
       cancelx : x ≡ g (f x)
       cancelx = P x ⁻¹
       cancely : g (f y) ≡ y
       cancely = P y
 
-    lemma₁ : {X : U} → (π₁ ∘ (δ {X})) ≡ (π₂ ∘ δ)
+    -- starting with a path, transporting along that path is the same as
+    -- precomposing with the corresponding transport map.
+    transportIsComp : {X X' Y : U i} (p : X ≡ X') (g : X' → Y) →
+       transport! (λ Z → Z → Y) p g ≡ (g ∘ tpMap p) 
+    transportIsComp refl g = refl
+
+    -- starting with an equivalence, precomposing is the same as transporting
+    -- along the corresponding path.
+    preCompIsTransport : {X X' Y : U i} (e : X ≅ᴱ X') (g : X' → Y) →
+       transport! (λ Z → Z → Y) (S e) g ≡ (g ∘ (fst e)) 
+    preCompIsTransport f,e g =  transportIsComp (S f,e) g · η where
+      f = fst f,e
+      η : g ∘ tpMap (S f,e) ≡ (g ∘ f)
+      η = ap (λ f → g ∘ f) (ηᴱ f,e) 
+
+    -- H is the proof that E is preserved by homotopies
+    preCompIsE : {X X' Y : U i} (f : X ≅ᴱ X') → E(λ (g : X' → Y) → g ∘ (fst f))
+    preCompIsE f,e = H (transportIsE! (S f,e)) (preCompIsTransport f,e)
+
+    preCompδ : {X Y : U i} → (Δ X → Y) → X → Y
+    preCompδ g = g ∘ δ
+
+    preCompδIsE : {X Y : U i} → E (preCompδ {X} {Y})
+    preCompδIsE = preCompIsE (δ , d)
+
+    lemma₁ : {X : U i} → (π₁ ∘ (δ {_} {X})) ≡ (π₂ ∘ δ)
     lemma₁ {X} = refl
 
-    lemma₂ : {X : U} → π₁ {X} ≡ π₂
+    lemma₂ : {X : U i} → π₁ {_} {X} ≡ π₂
     lemma₂ {X} = blahblah preCompδ preCompδIsE π₁ π₂ lemma₁
 
-    funext : {X Y : U} (f₁ f₂ : X → Y) → (f₁ ∼ f₂) → f₁ ≡ f₂
+    funext : {X Y : U i} (f₁ f₂ : X → Y) → (f₁ ∼ f₂) → f₁ ≡ f₂
     funext {X} {Y} f₁ f₂ h = f₁ =⟨ refl ⟩ π₁ ∘ f
                               =⟨ ap composef lemma₂ ⟩ π₂ ∘ f
                               =⟨ refl ⟩ f₂ ∎ where

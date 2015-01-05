@@ -16,7 +16,7 @@ taking f as S ∘ R, we get our retraction.
 -}
 
 
-module identityRetraction {A : U} (f : {x y : A} → x ≡ y → x ≡ y) where
+module identityRetraction {i} {A : U i} (f : {x y : A} → x ≡ y → x ≡ y) where
 
 fIsConcat : {x y : A} (p : x ≡ y) → f p ≡ ((f refl) · p)
 fIsConcat refl = refl-unitr! (f refl)
