@@ -1,13 +1,12 @@
 {-# OPTIONS --without-K #-}
-{-# OPTIONS --type-in-type #-}
-
-module equiv {A B : Set} {C : A → Set} where
 
 open import hott
+module equiv {i j k} {A : U i} {B : U j} {C : A → U k} where
+
 
 -- We use "invertible" for a function with a (homotopy) inverse, rather
 -- than the (in my mind) misleading title of "quasiequivalence"
-invertible : (A → B) → U
+invertible : (A → B) → U (lmax i j)
 invertible f = Σ (λ g → f isSectionOf g × g isSectionOf f)
 
 -- bi-invertibility; we use a quick name, since we won't ever use it again.
@@ -15,7 +14,7 @@ invertible f = Σ (λ g → f isSectionOf g × g isSectionOf f)
 --"f is a section and a retraction" sounds better than
 --"f is a retraction and a section"
 
-biinv : (A → B) → U
+biinv : (A → B) → U (lmax i j)
 biinv f = (Σ (λ g → f isSectionOf g)) × (Σ (λ h → h isSectionOf f))
 
 -- binvertibility and quasiequivalence are clearly (logically)
@@ -37,11 +36,11 @@ biinv-is-invertible {f} ((g , p) , (h , q)) = (g ∘ f ∘ h ,
   associateᵣ x = ap f (p (h x)) · q x
 
 -- "half-adjoint" equivalence
-hae : (f : A → B) (g : B → A) → (g ∘ f ∼ id) → (f ∘ g ∼ id ) → U
+hae : (f : A → B) (g : B → A) → (g ∘ f ∼ id) → (f ∘ g ∼ id ) → U (lmax i j)
 hae f g η ε = (ap f ∘ η) ∼ (ε ∘ f)
 
 -- A "predicate"
-ishae : (A → B) → U
+ishae : (A → B) → U (lmax i j)
 ishae f = Σ λ g →
             Σ λ η → 
               Σ λ ε →

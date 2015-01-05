@@ -1,5 +1,4 @@
 {-# OPTIONS --without-K #-}
-{-# OPTIONS --type-in-type #-}
 
 open import hott
 

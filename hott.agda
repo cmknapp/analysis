@@ -1,5 +1,4 @@
 {-# OPTIONS --without-K #-}
---{-# OPTIONS --type-in-type #-}
 
 module hott where
 
@@ -26,11 +25,11 @@ data ⊥ : U₀ where
 
 -- unit type
 data 𝟙 : U₀ where
-  ★ : 𝟙
+  ⋆ : 𝟙
   
 -- unit induction. We write it as "rec", because whatever...
-𝟙-rec : ∀ {i} {C : 𝟙 → U i} (c : C ★) (x : 𝟙) → C x
-𝟙-rec c ★ = c
+𝟙-rec : ∀ {i} {C : 𝟙 → U i} (c : C ⋆) (x : 𝟙) → C x
+𝟙-rec c ⋆ = c
 
 -- Booleans
 data 𝟚 : U₀ where
@@ -272,7 +271,7 @@ _! : ∀ {i j} {A : U i} {B : U j} (f : A → B) → {e : isEquiv f} → B → A
 {- Properties of contractibility, props and sets -}
 
 1-is-contr : isContr 𝟙
-1-is-contr = (★ , 𝟙-rec refl)
+1-is-contr = (⋆ , 𝟙-rec refl)
 
 contr-is-prop : ∀ {i} {A : U i} → isContr A → isProp A
 contr-is-prop (c , paths) x y = x =⟨ paths x ⁻¹ ⟩
@@ -338,9 +337,9 @@ contr-areEquiv C D {(c , p)} {(d , q)} =
   
 -- 𝟙 is contractible:
 𝟙-isContr : isContr 𝟙
-𝟙-isContr = (★ , f) where
-  f : (x : 𝟙) → ★ ≡ x
-  f ★ = refl
+𝟙-isContr = (⋆ , f) where
+  f : (x : 𝟙) → ⋆ ≡ x
+  f ⋆ = refl
 
 -- some simple corollaries. Ostensibly, these are useful, but really we
 -- use contractibility more than (≃1)
