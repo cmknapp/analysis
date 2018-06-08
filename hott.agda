@@ -68,12 +68,13 @@ data _≡_ {i} {A : U i} : A → A → U i where
   
 _⁻¹ : ∀ {i} {A : U i} {x y : A} → x ≡ y → y ≡ x
 refl ⁻¹ = refl
+infix 20 _⁻¹
 
 _·_ : ∀ {i} {A : U i} {x y z : A} → x ≡ y → y ≡ z → x ≡ z
 refl · refl = refl
 
 infixr 8 _·_
-infix  2 _∎
+infix  3 _∎
 infixr 2 _=⟨_⟩_
 
 _=⟨_⟩_ : ∀ {i} {A : U i} (x : A) {y z : A} → x ≡ y → y ≡ z → x ≡ z
@@ -95,12 +96,12 @@ refl-unitr refl = refl
 refl-unitr! : ∀ {i} {A : U i} {x y : A} (p : x ≡ y) → p ≡ p · refl
 refl-unitr! p = (refl-unitr p) ⁻¹
 
-path-assoc : ∀ {i} {A : U i} {x y z w : A} (p : x ≡ y) (q : y ≡ z) (r : z ≡ w) →
-  (p · q) · r ≡ p · q · r
+path-assoc : ∀ {i} {A : U i} {x y z w : A} (p : x ≡ y) (q : y ≡ z)
+   (r : z ≡ w) → (p · q) · r ≡ p · q · r
 path-assoc refl refl refl = refl
 -- backwards
-path-assoc! : ∀ {i} {A : U i} {x y z w : A} (p : x ≡ y) (q : y ≡ z) (r : z ≡ w) →
-  p · q · r ≡ (p · q) · r
+path-assoc! : ∀ {i} {A : U i} {x y z w : A} (p : x ≡ y) (q : y ≡ z)
+   (r : z ≡ w) → p · q · r ≡ (p · q) · r
 path-assoc! p q r = (path-assoc p q r) ⁻¹
 
 
@@ -122,6 +123,7 @@ _·ᵣ_ : ∀ {i} {A : U i} {x y z : A} {p q : x ≡ y} → (p ≡ q) → (r : y
 α ·ᵣ refl = (refl-unitr _) · (α · (refl-unitr _) ⁻¹)
 
 --and left whiskering
+infix 1 _·ₗ_
 _·ₗ_ : ∀ {i} {A : U i} {x y z : A} {p q : y ≡ z} → (r : x ≡ y) → (p ≡ q) →
      (r · p) ≡ (r · q)
 refl ·ₗ α = (refl-unitl _) · (α · (refl-unitl _) ⁻¹)
@@ -130,7 +132,11 @@ refl ·ₗ α = (refl-unitl _) · (α · (refl-unitl _) ⁻¹)
 ap : ∀ {i j} {A : U i} {B : U j} {x y : A} (f : A → B) → x ≡ y → f x ≡ f y
 ap f refl = refl
 
-infixr 5 _∘_                       
+ap· : ∀ {i j} {A : U i} {B : U j} {x y z : A} (f : A → B)
+  → (p : x ≡ y) (q : y ≡ z) → (ap f p) · (ap f q) ≡ ap f (p · q)
+ap· f refl refl = refl
+
+infixr 10 _∘_                       
 _∘_ : ∀ {i j k} {A : U i} {B : A → U j} {C : (x : A) → B x → U k}
   (g : {x : A} (y : B x) → C x y) (f : Π A B) → (x : A) → C x (f x)
 (g ∘ f) x = g (f x)
@@ -143,7 +149,7 @@ f $ x = f x
 id : ∀ {i} {A : U i} → A → A
 id x = x
 
--- but agda can be a pain: agda doesn't believe that ap id p = p.
+-- agda doesn't believe that ap id p = p.
 -- We have to make heavy use of this path, and it makes some 
 -- should-be-judgmental equalities into propositional equalities.
 apid : ∀ {i} {A : U i} {x y : A} {p : x ≡ y} → (ap id p) ≡ p
@@ -155,7 +161,7 @@ const : ∀ {i j} {A : U i} {B : U j} → B → A → B
 const b a = b
 
 -- This was ripped from the "real" hott-agda library.
--- I don't see why they did it this way;
+-- (I don't see why they did it this way)
 coe : ∀ {i} {A B : U i} (p : A ≡ B) → A → B
 coe refl x = x
 
@@ -199,12 +205,12 @@ tp· : ∀ {i j} {A : U i} {C : A → U j} {x y z : A} (p : x ≡ y) (q : y ≡ 
   (u : C x) →  transport C q (transport C p u) ≡ transport C (p · q) u
 tp· refl refl _ = refl
 
-tp∘ : ∀ {i j k} {A : U i} {B : U j} { f : A → B} {E : B → U k} {x y : A} (p : x ≡ y) (u : E (f x)) →
-    transport (E ∘ f) p u ≡ transport E (ap f p) u
+tp∘ : ∀ {i j k} {A : U i} {B : U j} { f : A → B} {E : B → U k} {x y : A}
+   (p : x ≡ y) (u : E (f x)) → transport (E ∘ f) p u ≡ transport E (ap f p) u
 tp∘ refl _ = refl
 
-tpπ : ∀ {i j} {A : U i} {P Q : A → U j} {x y : A} {f : (x : A) → (P x → Q x)} (p : x ≡ y)
-  (u : P x) → transport Q p (f x u) ≡ f y (transport P p u)
+tpπ : ∀ {i j} {A : U i} {P Q : A → U j} {x y : A} {f : (x : A) → (P x → Q x)}
+ (p : x ≡ y) (u : P x) → transport Q p (f x u) ≡ f y (transport P p u)
 tpπ refl _ = refl
 
 -- tp in identity paths is nicely behaved
@@ -262,7 +268,7 @@ isEquiv {_} {_} {A} {B} f = (b : B) → isContr (fiber f b)
 
 infix 3 _≃_
 _≃_ : ∀ {i j} → U i → U j → U (lmax i j)
-A ≃ B = Σ {_} {_} {A → B} (λ f → isEquiv f)
+A ≃ B = Σ (λ (f : A → B) → isEquiv f)
 
 -- extracting an inverse. We prove it *is* an inverse later
 _! : ∀ {i j} {A : U i} {B : U j} (f : A → B) → {e : isEquiv f} → B → A
@@ -318,7 +324,7 @@ biimplication-isEquiv {_} {_} {P} {Q} p q f g b =
                       gb  = g b
                       fgb = f (g b)
                       prop : (x : fiber f b) →
-                        (q fgb b ≡ (snd x) [ (λ x → f x ≡ b) ↓ p gb (fst x) ])
+                       (q fgb b ≡ (snd x) [ (λ x → f x ≡ b) ↓ p gb (fst x) ])
                         --prop-isSet Q q gives us that identity types for all
                         --elements (in this case, fx and b) are mere props.
                         --So we take two paths to get an equality.
@@ -383,7 +389,7 @@ homotopy-switch f H x = fHx =⟨ refl-unitr! fHx ⟩        (fHx · refl)
                 natsquare : (Hfx · ap id Hx) ≡ (fHx · Hx)
                 natsquare = homotopy-natural H (H x)
                 naturality : (Hfx · Hx) ≡ (fHx · Hx)
-                naturality = Hfx ·ₗ apid ⁻¹ · natsquare
+                naturality = (Hfx ·ₗ apid ⁻¹) · natsquare
 
 -- Section and retraction.
 module section {i} {j} {A : U i} {B : U j} where
@@ -395,7 +401,7 @@ open section public
 -- The diagonal of a type, and the diagonal map.
 -- Perhaps this should be elsewhere?
 Δ : ∀ {i} → U i → U i
-Δ B = Σ {_} {_} {B} (λ x → Σ λ y → x ≡ y)
+Δ B = Σ (λ (x : B) → Σ λ y → x ≡ y)
 
 δ : ∀ {i} {A : U i} → A → Δ A
 δ x = (x , x , refl)

@@ -32,3 +32,10 @@ idempotentIsId e refl =
       fr  = f refl
       fr! = (f refl) ⁻¹
       ffr = f (f refl)
+
+--this should go elsewhere whenever I actually organize this stuff properly
+idtoEquiv : ∀ {i} {X Y : U i} → X ≡ Y → X ≃ Y
+idtoEquiv refl = (λ z → z) , (λ b → (b , refl) , {!!})
+
+
+--  module UARetraction {i} {ua v

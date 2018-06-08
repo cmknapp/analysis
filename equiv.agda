@@ -1,12 +1,16 @@
 {-# OPTIONS --without-K #-}
 
+--TODO: we force a and b to have the same U-level for now...
+--I'm fumbling on a universe issue I don't want to deal with.
+
 open import hott
-module equiv {i j k} {A : U i} {B : U j} {C : A → U k} where
+module equiv {i k} {A : U i} {B : U i} {C : A → U k} where
+--module equiv {i j k} {A : U i} {B : U j} {C : A → U k} where
 
 
 -- We use "invertible" for a function with a (homotopy) inverse, rather
 -- than the (in my mind) misleading title of "quasiequivalence"
-invertible : (A → B) → U (lmax i j)
+invertible : (A → B) → U i --(lmax i j)
 invertible f = Σ (λ g → f isSectionOf g × g isSectionOf f)
 
 -- bi-invertibility; we use a quick name, since we won't ever use it again.
@@ -14,7 +18,7 @@ invertible f = Σ (λ g → f isSectionOf g × g isSectionOf f)
 --"f is a section and a retraction" sounds better than
 --"f is a retraction and a section"
 
-biinv : (A → B) → U (lmax i j)
+biinv : (A → B) → U i --(lmax i j)
 biinv f = (Σ (λ g → f isSectionOf g)) × (Σ (λ h → h isSectionOf f))
 
 -- binvertibility and quasiequivalence are clearly (logically)
@@ -36,11 +40,12 @@ biinv-is-invertible {f} ((g , p) , (h , q)) = (g ∘ f ∘ h ,
   associateᵣ x = ap f (p (h x)) · q x
 
 -- "half-adjoint" equivalence
-hae : (f : A → B) (g : B → A) → (g ∘ f ∼ id) → (f ∘ g ∼ id ) → U (lmax i j)
+hae : (f : A → B) (g : B → A) → (g ∘ f ∼ id) → (f ∘ g ∼ id ) →
+ U i -- U (lmax i j)
 hae f g η ε = (ap f ∘ η) ∼ (ε ∘ f)
 
 -- A "predicate"
-ishae : (A → B) → U (lmax i j)
+ishae : (A → B) → U i --(lmax i j)
 ishae f = Σ λ g →
             Σ λ η → 
               Σ λ ε →
@@ -50,62 +55,40 @@ ishae f = Σ λ g →
 hae-is-inv : (f : A → B) → ishae f → invertible f
 hae-is-inv f (g , η , ε , τ) = (g , η , ε)
 
-{-The other direction is more work. We need to rebuild ε, and then
- -built τ from that. This requires some path-magic.
- 
- -intuitively, we're trying to conjugate fηg by ε, but this doesn't
- -give us the right type, so on the left we use εfg⁻¹. This gives us
- -ε' : fg ∼ fgfg ∼ fg ∼ id. Naturality and some clever whiskering lets
- -us fill in the resulting opetope.
- -}
- {-
-inv-is-hae : (f : A → B) → invertible f → ishae f
-inv-is-hae f (g , η , ε) = (g , η , ε' , τ) where
-            --just renaming to make life easier:
-            fgfη   : (x : A) → (f (g (f (g (f x))))) ≡ (f (g (f x)))
-            fgfη x = (ap f (ap (g ∘ f) (η x)))
-            fη     : (x : A) → (f (g (f x))) ≡ (f x)
-            fη   x = ap f (η x)
-            εf     : (x : A) → f (g (f x)) ≡ f x
-            εf   x = ε (f x)
-            εfg    : (x : B) → f (g (f (g x))) ≡ f (g x)
-            εfg  x = ε (f ( g x))
-            fηg    : (x : B) → f (g (f (g x))) ≡ f (g x)
-            fηg  x = ap f (η (g x))
-            ε' : f ∘ g ∼ id
-            ε' x =  (εfg x) ¹ · (fηg x) · (ε x)
-            commute : (x : A) → (fηg (f x)) ≡ fgfη x
-            commute x = ap (ap f) ((homotopy-switch (g ∘ f) η x) ¹)
-            naturality : (x : A) →
-              (εfg (f x) · (fη x)) ≡ (fgfη x · εf x)
-            naturality x = homotopy-natural εf (η x)
-            τ : ap f ∘ η ∼ ε' ∘ f
-            τ x = {!                     ap f (η x)  =⟨ ? ⟩
-                                 refl · ap f (η x)  =⟨ ? ⟩
-       (ε (f (g x)) ¹ · ε (f (g x)))  · ap f (η x)  =⟨ ? ⟩
-        ε (f (g x)) ¹ · (ε (f (g x))  · ap f (η x)  =⟨ ? ⟩
-        ε (f (g x)) ¹ · (ap f (ap (g ∘ f) (η x)))  · ε (f x) =⟨ ? ⟩
-
-!}
-
+{- Grad lemma: invertible is (logically) equivalent to equivalence.
+   This whole proof should go in its own module, with some of this
+   stuff hidden.
 -}
 
--- Grad lemma: invertible is (logically) equivalent to equivalence.
-inv-is-equiv : (f : A → B) → invertible f → isEquiv f
-inv-is-equiv f (g , η , ε) b = ( gb , paths) where
-             gb    = (g b , ε b)
-             g-_η : {x : A} (p : f x ≡ b) →
-               g b ≡ x
-             g- p η = ap g p ⁻¹ · η _
-             lift : (x : A) (p : f x ≡ b) →
-                ε b ≡ p [ (λ v → f v ≡ b) ↓ (g- p η) ]
-             lift x p = {!(tp∘ (g- p η) ε b) · ?!}
-             paths : (x : fiber f b) → (gb ≡ x)
-             paths (x , p) = pair= (ap g p ⁻¹ · η x) (lift x p)
-{-
-equiv-is-inv : (f : A → B) → isEquiv f → invertible f
-equiv-is-inv f e = (f ! , η , ε) where
-             η = ?
-             ε = ?
-             -}
+    {- Eqv => Inv. The idea is to use the contractibility of fibers
+       to extract the paths we need -}
+--Fibers of f(x) contract to (x,refl). There's a more general version
+--we should use.
+contr-lemma : (f : A → B) (e : isEquiv f) (x : A) (y : fiber f (f x)) →
+            y ≡ (x , refl)
+contr-lemma f e x y = contr-isProp (e (f x)) y (x , refl)
 
+-- f ∘ f! ∘ f ∼ f. So, going back and forth and back gives us something
+-- in the fiber. Using contr-lemma, we can remove the f form the front
+-- to get a homotopy f! ∘ f ∼ id
+zigzag-lemma : (f : A → B) → (e : isEquiv f) → (f ∘ (f !) {e} ∘ f) ∼ f
+zigzag-lemma f e x = snd (center (e (f x)))
+
+-- f! ∘ f ∼ id comes from the above. For the other direction, we
+-- know that f!(y) lies in the fiber of y.
+equiv-is-inv : (f : A → B) → isEquiv f → invertible f
+equiv-is-inv f e = ((f !) {e} , η , ε) where
+        contract = contr-lemma f e
+        f! = (f !) {e}
+        f!f = f! ∘ f
+        η = λ x → ap fst (contract x (f!f x , zigzag-lemma f e x))
+        ε = λ y → snd (center (e y))
+
+--We show that fiber f y is a proposition. We have an obvious inhabitant
+--as (g b, ε b)
+inv-is-equiv : (f : A → B) → invertible f → isEquiv f
+inv-is-equiv f (g , η , ε) b = inhProp-isContr (g b , ε b) prop where
+        r : (x y : fiber f b) → (fst x ≡ fst y)
+        r (x , p) (y , q) = (η x ⁻¹) · (ap g p) · (ap g q ⁻¹) · (η y)
+        prop : isProp (fiber f b)
+        prop x y = pair= (r x y) ({!!})
